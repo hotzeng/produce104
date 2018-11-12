@@ -30,7 +30,12 @@ static pcb_t * unblock_one(node_t * wait_queue)
 
     ASSERT(disable_count);
     p = (pcb_t *) queue_get(wait_queue);
+    while (!queue_empty(wait_queue) && p->status == EXITED) {
+      p = (pcb_t *) queue_get(wait_queue);
+    }
+
     if (NULL != p) {
+        p->barrier = NULL;
         unblock(p);
         return p;
     } else {
@@ -210,6 +215,7 @@ void barrier_wait(barrier_t * b)
   {
     b->size ++;
     block( &b->wait_queue );
+    current_running->barrier = b;
   }
 
   leave_critical();

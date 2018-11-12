@@ -7,6 +7,13 @@
 #include "common.h"
 #include "syslib.h"
 #include "util.h"
+#include "mbox.h"
+#include "scheduler.h"
+#include "queue.h"
+#include "sync.h"
+
+
+
 
 /* 1. Place system call number (i) in eax and arg1 in ebx 2. Trigger
    interrupt 48 (system call). 3. Return value is in eax after returning
@@ -31,6 +38,18 @@ void yield(void)
 
 void exit(void)
 {
+    node_t * next;
+    while (!queue_empty(&current_running->waiting_queue)) {
+      next = queue_get(&current_running->waiting_queue);
+      unblock((pcb_t *)next);
+    } 
+    for (int mbox=0; mbox<MAX_MBOXEN; mbox++) {
+      if (current_running->mboxes[mbox] == 1) {
+        do_mbox_close(mbox);
+        current_running->mboxes[mbox] = 0;
+      }
+    }
+
     invoke_syscall(SYSCALL_EXIT, IGNORE, IGNORE, IGNORE);
 }
 

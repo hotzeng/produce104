@@ -83,6 +83,8 @@ static void try_wake()
       /* remove from sleep list */
       ASSERT( sleeper == (pcb_t*) queue_get(&sleep_queue) );
 
+      if (sleeper->status == EXITED)
+        continue;
       /* mark as awake */
       sleeper->status = READY;
 
@@ -187,6 +189,8 @@ void scheduler()
     {
       /* select the front of the ready list */
       chosen_process = (pcb_t *) queue_get(&ready_queue);
+      if (chosen_process->status == EXITED)
+        continue;
 
       if( choice >= chosen_process->priority )
       {
@@ -288,6 +292,8 @@ void block(node_t * wait_queue)
 
 void unblock(pcb_t * task)
 {
+    if (task->status == EXITED)
+      return;
     ASSERT(disable_count);
     task->status = READY;
     if( ENABLE_PRIORITIES )

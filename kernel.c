@@ -100,6 +100,13 @@ static void initialize_pcb(pcb_t *p, pid_t pid, struct task_info *ti)
     p->sleep_until = 0;
     p->total_process_time = 0;
     p->waiting_for_lock = NULL;
+    p->barrier = NULL;
+
+    for (int i=0; i<MAX_MBOXEN; i++) {
+      p->mboxes[i] = 0;
+    }
+
+    queue_init(&p->waiting_queue);
 
     switch (ti->task_type) {
     case KERNEL_THREAD:
@@ -401,22 +408,86 @@ int get_max_pcbs(void)
 
 static int do_spawn(const char *filename)
 {
-  (void)filename;
-  //TODO: Fill this in
-  return -1;
+  // (void)filename;
+  Process proc = ramdisk_find(filename);
+  if (!proc)
+  {
+      return -1;
+  }
+  int pid;
+  for (pid=0; pid<NUM_PCBS; pid++) {
+    if (pcb[pid].status == EXITED) {
+      struct task_info* ti;
+      ti->entry_point = (uint32_t) proc;
+      ti->task_type = PROCESS;
+
+      initialize_pcb(&pcb[pid], pid, ti);
+
+      queue_put(&ready_queue, (node_t *)&pcb[pid]);
+
+      total_ready_priority++;
+      return pid;
+    }
+  }
+
+  return -2;
+
 }
 
 static int do_kill(pid_t pid)
 {
-  (void) pid;
+  // (void) pid;
   //TODO: Fill this in
-  return -1;
+
+  enter_critical();
+
+  // If it is on the ready queue, update total priority to exclude its value.
+  if (pcb[pid].status == READY)
+    total_ready_priority = total_ready_priority - pcb[pid].priority;
+  
+  // change its status to exited
+  pcb[pid].status = EXITED;
+
+  // See if any process is waiting for it by looking at its pcb->waiting_queue.
+  node_t * next;
+  while (!queue_empty(&pcb[pid].waiting_queue)) {
+    next = queue_get(&pcb[pid].waiting_queue);
+    unblock((pcb_t *)next);
+  }
+  // change barrier size if necessary
+  if (pcb[pid].barrier != NULL)
+    pcb[pid].barrier->size --;
+
+  // close the mailbox it uses
+  for (int mbox=0; mbox<MAX_MBOXEN; mbox++) {
+    if (pcb[pid].mboxes[mbox] == 1) {
+      do_mbox_close(mbox);
+      pcb[pid].mboxes[mbox] = 0;
+    }
+  }
+
+  leave_critical();
+
+
+  // call scheduler if current running is killed
+  if (current_running->pid == pid) {
+    enter_critical();
+    scheduler_entry();
+  }
+
+  return 0;
+
 }
 
 static int do_wait(pid_t pid)
 {
-  (void) pid;
-  //TODO: Fill this in
-  return -1;
+  // (void) pid;
+  // //TODO: Fill this in
+  // return -1;
+
+  enter_critical();
+  block(&pcb[pid].waiting_queue);
+  leave_critical();
+  return 0;
 }
 

@@ -275,19 +275,25 @@ static int moff = 0;
 
 int do_getchar()
 {
-  do_sleep(1000);
-  char c = message[moff];
-  moff++;
-  if( message[moff] == '\0' )
-    moff = 0;
+  // do_sleep(1000);
+  // char c = message[moff];
+  // moff++;
+  // if( message[moff] == '\0' )
+  //   moff = 0;
 
-  return (int)c;
+  // return (int)c;
+
+  struct character c;
+  do_mbox_recv(keyboard_mbox, &c, 1);
+  return (int)c.character;
 }
 
 /*    Called by the keyboard interrupt (irq1) handler (through normal_handler)
     to insert an ASCII character in the keyboard queue.
 */
 static void putchar(struct character *c) {
-  (void)c;
+  // (void)c;
   //TODO: Fill this in
+  if(!do_mbox_is_full(keyboard_mbox))
+      do_mbox_send(keyboard_mbox, c, 1);
 }

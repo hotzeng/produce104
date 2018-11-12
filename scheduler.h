@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "queue.h"
+#include "sync.h"
 
 
 typedef enum {
@@ -65,6 +66,13 @@ typedef struct pcb {
 
     /* For deadlock detection */
     struct lock * waiting_for_lock;
+    
+    node_t waiting_queue; // indicate which process waits for this process to end
+    int mboxes[MAX_MBOXEN]; // indicate which mailboxes this process opened
+    barrier_t *barrier; // indicate which possible barrier it is on
+
+
+
 } pcb_t;
 
 extern priority_t total_ready_priority;
