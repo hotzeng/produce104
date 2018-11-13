@@ -265,6 +265,7 @@ void keyboard_init(void) {
 
   keyboard_mbox = do_mbox_open( KEYBOARD_MBOX_NAME );
   //TODO: Fill this in
+
 }
 
 /* Function to read a character from the keyboard queue. */
