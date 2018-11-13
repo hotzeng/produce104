@@ -1,7 +1,10 @@
 #include "common.h"
 #include "mbox.h"
+#include "sync.h"
+#include "util.h"
+#include "printf.h"
 
-static Message msg[MAX_MBOXEN][MAX_MBOX_LENGTH];
+
 // buffers of messages as message box, each box has one
 //static Message* buffer[MAX_MBOXEN][MAX_MBOX_LENGTH];
 static int boxArr[MAX_MBOXEN];
@@ -12,6 +15,8 @@ typedef struct
   //TODO: Fill this in
   int val; 
 } Message;
+
+static Message msg[MAX_MBOXEN][MAX_MBOX_LENGTH];
 
 typedef struct
 {
@@ -39,11 +44,10 @@ void init_mbox(void)
   (void) MessageBoxen;
   //TODO: Fill this in
   for(int i = 0; i < MAX_MBOXEN; i++) {
-    MessageBoxen[i].name = i + "0";
+    bcopy("0", MessageBoxen[i].name, 1);
     semaphore_init(&MessageBoxen[i].fullBuffer, 0);
     semaphore_init(&MessageBoxen[i].emptyBuffer, MAX_MBOX_LENGTH);  
     semaphore_init(&MessageBoxen[i].mutex, 1);  
-    lock_init(&MessageBoxen[i].mutex);
     MessageBoxen[i].usageCnt = 0;
     MessageBoxen[i].buffer = msg[i];
     MessageBoxen[i].buf_head = 0;
@@ -77,8 +81,8 @@ mbox_t do_mbox_open(const char *name)
     return boxArr[free_head++];
   }
   for(int i = 0; i < free_head; i++) {
-    bool res = same_string( MessageBoxen[boxArr[i]].name, name );
-    if(res == true) {
+    bool_t res = same_string( MessageBoxen[boxArr[i]].name, name );
+    if(res == TRUE) {
       MessageBoxen[boxArr[i]].usageCnt++;
       return boxArr[i];
     }
@@ -94,7 +98,7 @@ mbox_t do_mbox_open(const char *name)
  */
 void do_mbox_close(mbox_t mbox)
 {
-  (void)mbox;
+  //(void)mbox;
   //TODO: Fill this in
   for(int i = 0; i < free_head; i++) {
     if(boxArr[i] == mbox) {
@@ -104,8 +108,8 @@ void do_mbox_close(mbox_t mbox)
         int tmp = boxArr[free_head];
         boxArr[free_head] = mbox;
         boxArr[i] = tmp;
-        semaphore_init(MessageBoxen[mbox].fullBuffer, 0);
-        semaphore_init(MessageBoxen[mbox].emptyBuffer, MAX_MBOX_LENGTH);
+        semaphore_init(&MessageBoxen[mbox].fullBuffer, 0);
+        semaphore_init(&MessageBoxen[mbox].emptyBuffer, MAX_MBOX_LENGTH);
       }
       return;
     }    
@@ -121,7 +125,7 @@ void do_mbox_close(mbox_t mbox)
  */
 int do_mbox_is_full(mbox_t mbox)
 {
-  (void)mbox;
+  //(void)mbox;
   //TODO: Fill this in
   if(MessageBoxen[mbox].buf_head == (MessageBoxen[mbox].buf_tail + 1) % MAX_MBOX_LENGTH)
     return 1;
@@ -143,19 +147,23 @@ int do_mbox_is_full(mbox_t mbox)
  */
 void do_mbox_send(mbox_t mbox, void *msg, int nbytes)
 {
-  (void)mbox;
-  (void)msg;
-  (void)nbytes;
+  //(void)mbox;
+  //(void)msg;
+  //(void)nbytes;
   //TODO: Fill this in
   int nbytes_sended = 0;
   while (nbytes_sended < nbytes) {
-      semaphore_down(MessageBoxen[mbox].emptyBuffer);
-      semaphore_down(MessageBoxen[mbox].mutex);
-      MessageBoxen[mbox].buffer[MessageBoxen[mbox].buf_tail] = *(msg + nbytes_sended);
+      semaphore_down(&MessageBoxen[mbox].emptyBuffer);
+      semaphore_down(&MessageBoxen[mbox].mutex);
+      // debug
+  #ifdef debug      
+      printf(15, 0, "execute mbox_send");
+  #endif
+      MessageBoxen[mbox].buffer[MessageBoxen[mbox].buf_tail] = *((Message*)msg + nbytes_sended);
       MessageBoxen[mbox].buf_tail = (MessageBoxen[mbox].buf_tail + 1) % MAX_MBOX_LENGTH;
       nbytes_sended++;
-      semaphore_up(MessageBoxen[mbox].mutex);
-      semaphore_down(MessageBoxen[mbox].fullBuffer);
+      semaphore_up(&MessageBoxen[mbox].mutex);
+      semaphore_up(&MessageBoxen[mbox].fullBuffer);
   }
 }
 
@@ -174,20 +182,27 @@ void do_mbox_send(mbox_t mbox, void *msg, int nbytes)
  */
 void do_mbox_recv(mbox_t mbox, void *msg, int nbytes)
 {
-  (void)mbox;
-  (void)msg;
-  (void)nbytes;
+  //(void)mbox;
+  //(void)msg;
+  //(void)nbytes;
   //TODO: Fill this in
+  // debug
+  #ifdef debug  
+  printf(12, 0, "begin do_mbox_recv");
+  #endif
   int nbytes_received = 0;
   while (nbytes_received < nbytes) {
-      semaphore_down(MessageBoxen[mbox].fullBuffer);
-      semaphore_down(MessageBoxen[mbox].mutex);
-      *(msg + nbytes_sended) = MessageBoxen[mbox].buffer[MessageBoxen[mbox].buf_head];
+      semaphore_down(&MessageBoxen[mbox].fullBuffer);
+      semaphore_down(&MessageBoxen[mbox].mutex);
+      *((Message*)msg + nbytes_received) = MessageBoxen[mbox].buffer[MessageBoxen[mbox].buf_head];
       MessageBoxen[mbox].buf_head = (MessageBoxen[mbox].buf_head + 1) % MAX_MBOX_LENGTH;
       nbytes_received++;
-      semaphore_up(MessageBoxen[mbox].mutex);
-      semaphore_down(MessageBoxen[mbox].emptyBuffer);
+      semaphore_up(&MessageBoxen[mbox].mutex);
+      semaphore_up(&MessageBoxen[mbox].emptyBuffer);
   }
+  #ifdef debug  
+  printf(13, 0, "finish do_mbox_recv");
+  #endif
 }
 
 /* Returns the number of processes that have
@@ -195,7 +210,7 @@ void do_mbox_recv(mbox_t mbox, void *msg, int nbytes)
  *   */
 unsigned int do_mbox_usage_count(mbox_t mbox)
 {
-  (void)mbox;
+  //(void)mbox;
   //TODO: Fill this in
   return MessageBoxen[mbox].usageCnt;
 }

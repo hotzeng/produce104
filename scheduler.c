@@ -206,6 +206,10 @@ void scheduler()
       }
     }
     current_running = chosen_process;
+    // debug
+    #ifdef debug    
+    printf(10+current_running->pid, 20, "%d is running", current_running->pid);
+    #endif
 
     current_running->entry_count++;
     if( ENABLE_PRIORITIES )
@@ -284,6 +288,9 @@ uint64_t do_gettimeofday(void)
 
 void block(node_t * wait_queue)
 {
+    #ifdef debug    
+    printf(0, 50, "enter block");
+    #endif
     ASSERT(disable_count);
     current_running->status = BLOCKED;
     queue_put(wait_queue, (node_t *) current_running);
@@ -292,6 +299,9 @@ void block(node_t * wait_queue)
 
 void unblock(pcb_t * task)
 {
+    #ifdef debug
+    printf(17, 0, "enter unblock");
+    #endif
     if (task->status == EXITED)
       return;
     ASSERT(disable_count);

@@ -6,6 +6,7 @@
 #include "mbox.h"
 #include "keyboard.h"
 #include "interrupt.h"
+#include "printf.h"
 
 /*    This is the keyboard device driver.
     It catches irq1 and read data from the keyboard controller,
@@ -231,7 +232,7 @@ void scroll_lock_handler(unsigned char c) {
 /* This function is called when a keyboard interrupt arrive.
  * For details refer to The Undocumented PC p. 332 */
 void keyboard_interrupt(void) {
-
+    printf(19, 0, "enter keyboard_interrupt");
     unsigned char key;
 
     /* Read key */
@@ -256,6 +257,7 @@ void keyboard_interrupt(void) {
     if (key < 0x54) {
         (*scan_to_ascii[key].handler)(key);
     }
+    printf(10, 15, "leave keyboard_interrupt");
 }
 
 static mbox_t keyboard_mbox;
@@ -284,6 +286,10 @@ int do_getchar()
 
   // return (int)c;
 
+  // debug
+  #ifdef debug
+  printf(11, 0, "begin do_getchar");
+  #endif
   struct character c;
   do_mbox_recv(keyboard_mbox, &c, 1);
   return (int)c.character;
@@ -295,6 +301,14 @@ int do_getchar()
 static void putchar(struct character *c) {
   // (void)c;
   //TODO: Fill this in
+  #ifdef debug  
+  printf(14, 0, "enter putchar");
+  #endif
+  leave_critical();
   if(!do_mbox_is_full(keyboard_mbox))
       do_mbox_send(keyboard_mbox, c, 1);
+  #ifdef debug
+  printf(18, 0, "leave putchar");
+  #endif
+  enter_critical();
 }
