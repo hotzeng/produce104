@@ -447,24 +447,34 @@ static int do_kill(pid_t pid)
   // change its status to exited
   pcb[pid].status = EXITED;
 
+  queue_remove((node_t *) &pcb[pid]);
+
   // See if any process is waiting for it by looking at its pcb->waiting_queue.
-  node_t * next;
   while (!queue_empty(&pcb[pid].waiting_queue)) {
     next = queue_get(&pcb[pid].waiting_queue);
+    // printf(19,30 ,"queue size = %d",queue_size(&pcb[pid].waiting_queue));
+
     unblock((pcb_t *)next);
   }
 
   // change barrier size if necessary
+  printf(19,1, "checking barrier ");
+
   if (pcb[pid].barrier != NULL)
     pcb[pid].barrier->size--;
 
   // close the mailbox it uses
+  printf(20,1, "closing mailbox ");
+
   for (int mbox=0; mbox<MAX_MBOXEN; mbox++) {
     if (pcb[pid].mboxes[mbox] == 1) {
       do_mbox_close(mbox);
       pcb[pid].mboxes[mbox] = 0;
     }
   }
+  printf(18,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  printf(19,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  printf(20,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
 
   leave_critical();
 

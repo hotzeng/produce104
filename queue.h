@@ -24,6 +24,14 @@ void queue_put(node_t * queue, node_t * item);
  */
 int queue_empty(node_t *queue);
 
+/* return size of the queue */
+int queue_size(node_t * queue);
+
+/* remove item from whatever queue it is on */
+node_t *queue_remove(node_t * item);
+
+
+
 /* Returns the first item in the queue
  * Returns NULL if the queue is empty
  */

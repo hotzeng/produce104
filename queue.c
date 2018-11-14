@@ -24,6 +24,29 @@ node_t *queue_get(node_t * queue)
     return item;
 }
 
+node_t *queue_remove(node_t * item) {
+  item->prev->next = item->next;
+  item->next->prev = item->prev;
+}
+
+int queue_size(node_t * queue)
+{
+  node_t *item;
+
+  item = queue->next;
+  if (item == queue) 
+    return 0;
+
+  int size = 1;
+
+  while (queue->next != queue) {
+    size++;
+    item = item->next;
+  }
+
+  return size;
+
+}
 void queue_put(node_t * queue, node_t * item)
 {
     item->prev = queue->prev;
