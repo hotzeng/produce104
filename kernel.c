@@ -131,7 +131,7 @@ static uint32_t *stack_new()
     static uint32_t next_stack = 0x100000;
 
     next_stack += 0x1000;
-    ASSERT(next_stack <= 0x200000);
+    // ASSERT(next_stack <= 0x200000);
     return (uint32_t *) next_stack;
 }
 
@@ -411,9 +411,8 @@ static int do_spawn(const char *filename)
   // (void)filename;
   Process proc = ramdisk_find(filename);
   if (!proc)
-  {
       return -1;
-  }
+
   int pid;
   for (pid=0; pid<NUM_PCBS; pid++) {
     if (pcb[pid].status == EXITED) {
@@ -443,7 +442,7 @@ static int do_kill(pid_t pid)
 
   // If it is on the ready queue, update total priority to exclude its value.
   if (pcb[pid].status == READY)
-    total_ready_priority = total_ready_priority - pcb[pid].priority;
+    total_ready_priority -= pcb[pid].priority;
   
   // change its status to exited
   pcb[pid].status = EXITED;
@@ -454,9 +453,10 @@ static int do_kill(pid_t pid)
     next = queue_get(&pcb[pid].waiting_queue);
     unblock((pcb_t *)next);
   }
+
   // change barrier size if necessary
   if (pcb[pid].barrier != NULL)
-    pcb[pid].barrier->size --;
+    pcb[pid].barrier->size--;
 
   // close the mailbox it uses
   for (int mbox=0; mbox<MAX_MBOXEN; mbox++) {

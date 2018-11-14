@@ -3,6 +3,7 @@
 #include "sync.h"
 #include "util.h"
 #include "printf.h"
+#include "kernel.h"
 
 
 // buffers of messages as message box, each box has one
@@ -84,6 +85,7 @@ mbox_t do_mbox_open(const char *name)
     bool_t res = same_string( MessageBoxen[boxArr[i]].name, name );
     if(res == TRUE) {
       MessageBoxen[boxArr[i]].usageCnt++;
+      current_running->mboxes[boxArr[i]] = 1;
       return boxArr[i];
     }
   }
@@ -103,6 +105,8 @@ void do_mbox_close(mbox_t mbox)
   for(int i = 0; i < free_head; i++) {
     if(boxArr[i] == mbox) {
       MessageBoxen[mbox].usageCnt--;
+      current_running->mboxes[i] = 0;
+
       if(MessageBoxen[mbox].usageCnt == 0) {
         free_head--;
         int tmp = boxArr[free_head];
