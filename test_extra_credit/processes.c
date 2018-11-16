@@ -23,26 +23,29 @@ static void get_line(char *buffer, int maxlen);
  */
 void init_process(void)
 {
+  lock_init(&local_lock);
   pid_t proc1 = spawn("p1");
-  printf(10, 50, "Id of p1: %d", proc1);
   pid_t proc2 = spawn("p2");
-  printf(11, 50, "Id of p2: %d", proc2);
-  for(;;)
-  {
-    printf(20, 1, "Type kill to kill p1...");
-    printf(21, 1, "$                           ");
 
+  printf(20, 1, "Type kill to kill p1...");
+  printf(21, 1, "$                           ");
 
+  //sleep(3000);
 
-    char buffer[100];
-    get_line(buffer, 100);
+  char buffer[1000];
+  get_line(buffer, 1000);
 
-    if(same_string(buffer, "kill")) {
-      printf(20, 50, "begin to kill p1!!");
-      kill(proc1);
-      printf(20, 50, "killed p1!!       ");
-    }
+  int killed = same_string(buffer, "kill");
+  if(killed) {
+    kill(proc1);
   }
+  while(1){
+    if(killed)
+      printf(6, 0, "killed p1!!            ");
+    else
+      printf(6, 0, "p1 not killed! Restart ");
+  }
+
 }
 
 
@@ -58,11 +61,12 @@ void p1(void)
 
 
 void p2(void) {
-  for(;;) {
-    printf(3, 0, "p2 cannot access the lock!");
-    lock_acquire(&local_lock);
+  printf(3, 0, "p2 cannot access the lock!");
+  lock_acquire(&local_lock);
+  //while(1) {
     printf(4, 0, "p2 acquire lock successfully!");
-  }  
+    do_exit();
+  //}  
 }
 
 static void get_line(char *buffer, int maxlen)

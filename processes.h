@@ -18,34 +18,10 @@
  */
 void init_process(void);
 
-/* the help process prints help,
- * then exits
- */
-void help_process(void);
+void p1(void);
 
-/* The count process just counts
- * seconds since it started
- */
-void count_process(void);
+void p2(void);
 
-/* The producer process will
- * put numbers into a message
- * box.
- */
-void producer_process(void);
-
-/* The consumer will pull
- * numbers from a message box
- */
-void consumer_process(void);
-
-/* This process will do nothing
- * but shutdown
- */
-void shutdown_process(void);
-
-/* Draws the airplane */
-void airplane_process(void);
 
 #endif
 

@@ -83,14 +83,22 @@ void Sheriff(void)
 
   mbox_t subRobin = mbox_open("Robin-Hood-Publish-PID");
   mbox_t subJohn = mbox_open("Little-John-Publish-PID");
+  //printf(15, 50, "id of Robin box is:%d", subRobin);
+  //printf(16, 50, "id of John  box is:%d", subJohn);
 
   pid_t robin, john;
 
   mbox_recv(subRobin, &robin, sizeof(pid_t));
   mbox_recv(subJohn, &john, sizeof(pid_t));
+  //printf(1, 50, "box:%d -> John: %d", subRobin, robin);
+  //printf(2, 50, "box:%d -> Robin:%d", subJohn,john);
 
   for(;;)
   {
+    //printf(15, 50, "Id of Robin is:%d", robin);
+    //printf(16, 50, "Id of John  is:%d", john);
+    //printf(18, 50, "box of Robin is:%d", subRobin);
+    //printf(19, 50, "box of John  is:%d", subJohn);
     printf(10,1, "Sheriff of Knottingham(%d): I am plotting... muahaha ", myPid);
 
     sleep(5000);
@@ -98,6 +106,7 @@ void Sheriff(void)
     printf(10,1, "Sheriff of Knottingham(%d): I have a dastardly plan! ", myPid);
 
     myRand = rand_step(myRand);
+    //myRand++;
 
     switch( myRand % 2 )
     {
@@ -107,6 +116,7 @@ void Sheriff(void)
         printf(1,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ");
         kill( robin );
         mbox_recv(subRobin, &robin, sizeof(pid_t));
+        //printf(21, 50, "box:%d -> Robin:%d", subRobin, robin);
         printf(12, 1, "Sheriff of Knottingham(%d): Egads! Robin(%d) lives!                 ", myPid, robin);
         break;
       case 1:
@@ -115,6 +125,7 @@ void Sheriff(void)
         printf(2,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ");
         kill( john );
         mbox_recv(subJohn, &john, sizeof(pid_t));
+        //printf(22, 50, "box:%d -> John:%d", subJohn,john);
         printf(12, 1, "Sheriff of Knottingham(%d): Blimey! Little John(%d) is alive again! ", myPid, john);
         break;
     }

@@ -2,129 +2,102 @@
 #include "syslib.h"
 #include "util.h"
 #include "printf.h"
+#include "sync.h"
+/*
+ * These are all of the programs which we include in our
+ * ramdisk filesystem.
+ *
+ * It is VERY IMPORTANT that these functions do
+ * not use any global variables.  This is because
+ * each one might be running many times, and we do
+ * not have any facility to duplicate their
+ * data segments.
+ *
+ */
+lock_t local_lock;
 
-void init(void)
+static void get_line(char *buffer, int maxlen);
+
+/* The 'init' process is a shell
+ * that lets you spawn other programs.
+ */
+void init_process(void)
 {
-  ASSERT( spawn("RobinHood") >= 0 );
-  ASSERT( spawn("LittleJohn") >= 0 );
-  ASSERT( spawn("Sheriff") >= 0 );
-  exit();
-}
+  lock_init(&local_lock);
+  pid_t proc1 = spawn("p1");
+  pid_t proc2 = spawn("p2");
 
-void RobinHood(void)
-{
-  mbox_t pub = mbox_open("Robin-Hood-Publish-PID");
-  pid_t myPid = getpid();
+  printf(20, 1, "Type kill to kill p1...");
+  printf(21, 1, "$                           ");
 
-  /* Send PID twice, once for LittleJohn,
-   * and once for the Sheriff
-   */
-  mbox_send(pub, &myPid, sizeof(pid_t));
-  mbox_send(pub, &myPid, sizeof(pid_t));
+  //sleep(3000);
 
-  /* Find Little John's PID */
-  mbox_t sub = mbox_open("Little-John-Publish-PID");
+  char buffer[1000];
+  get_line(buffer, 1000);
 
-  for(;;)
-  {
-    pid_t john;
-    mbox_recv(sub, &john, sizeof(pid_t));
-
-    printf(1,1, "Robin Hood(%d): Rob from the rich                   ", myPid);
-
-    wait(john);
-
-    printf(1,1, "Robin Hood(%d): I'm coming to save you, Little John!", myPid);
-
-    sleep(1000);
-    spawn("LittleJohn");
-    mbox_send(pub, &myPid, sizeof(pid_t));
+  int killed = same_string(buffer, "kill");
+  if(killed) {
+    kill(proc1);
   }
-}
-
-void LittleJohn(void)
-{
-  mbox_t pub = mbox_open("Little-John-Publish-PID");
-  pid_t myPid = getpid();
-
-  /* Send PID twice, once for Robin Hood,
-   * and once for the Sheriff
-   */
-  mbox_send(pub, &myPid, sizeof(pid_t));
-  mbox_send(pub, &myPid, sizeof(pid_t));
-
-  /* Find Robin's PID */
-  mbox_t sub = mbox_open("Robin-Hood-Publish-PID");
-
-  for(;;)
-  {
-    pid_t aramis;
-    mbox_recv(sub, &aramis, sizeof(pid_t));
-
-    printf(2,1, "Little John(%d): and give to the poor!         ", myPid);
-
-    wait(aramis);
-
-    printf(2,1, "Little John(%d): I'm coming to save you, Robin!", myPid);
-
-    sleep(1000);
-    spawn("RobinHood");
-    mbox_send(pub, &myPid, sizeof(pid_t));
+  while(1){
+    if(killed)
+      printf(6, 0, "killed p1!!            ");
+    else
+      printf(6, 0, "p1 not killed! Restart ");
   }
 
 }
 
 
-void Sheriff(void)
+/* The HELP process prints help, then exits
+ */
+void p1(void)
 {
-  uint32_t myRand = get_timer();
+  lock_acquire(&local_lock); 
+  for(;;) {
+    printf(1, 0, "Lock has been acquired by p1, kill me to wake up p2!");
+  }
+}
 
-  pid_t myPid = getpid();
 
-  mbox_t subRobin = mbox_open("Robin-Hood-Publish-PID");
-  mbox_t subJohn = mbox_open("Little-John-Publish-PID");
+void p2(void) {
+  printf(3, 0, "p2 cannot access the lock!");
+  lock_acquire(&local_lock);
+  //while(1) {
+    printf(4, 0, "p2 acquire lock successfully!");
+    do_exit();
+  //}  
+}
 
-  pid_t robin, john;
-
-  mbox_recv(subRobin, &robin, sizeof(pid_t));
-  mbox_recv(subJohn, &john, sizeof(pid_t));
-
-  for(;;)
+static void get_line(char *buffer, int maxlen)
+{
+  // debug
+  #ifdef debug
+  printf(10, 0, "begin get_line");
+  #endif
+  int offset;
+  for(offset=0; offset<maxlen; )
   {
-    printf(10,1, "Sheriff of Knottingham(%d): I am plotting... muahaha ", myPid);
-
-    sleep(5000);
-
-    printf(10,1, "Sheriff of Knottingham(%d): I have a dastardly plan! ", myPid);
-
-    myRand = rand_step(myRand);
-
-    switch( myRand % 2 )
+    char c = get_char();
+    if( c == '\n' || c == '\r' )
+      break;
+    else if( c == '\b' )
     {
-      case 0:
-        printf(11, 1, "Sheriff of Knottingham(%d): I will kill Robin Hood(%d)!  ", myPid, robin);
-        sleep(1000);
-        printf(1,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ");
-        kill( robin );
-        mbox_recv(subRobin, &robin, sizeof(pid_t));
-        printf(12, 1, "Sheriff of Knottingham(%d): Egads! Robin(%d) lives!                 ", myPid, robin);
-        break;
-      case 1:
-        printf(11, 1, "Sheriff of Knottingham(%d): I will kill Little John(%d)! ", myPid, john);
-        sleep(1000);
-        printf(2,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ");
-        kill( john );
-        mbox_recv(subJohn, &john, sizeof(pid_t));
-        printf(12, 1, "Sheriff of Knottingham(%d): Blimey! Little John(%d) is alive again! ", myPid, john);
-        break;
+      if( offset > 0 )
+      {
+        offset --;
+        printf(21, 1 + 2 + offset, " ");
+      }
+      continue;
     }
-
-    sleep(2000);
-    printf(11, 1, "                                                           ");
-    printf(12, 1, "                                                                      ");
+    else
+    {
+      printf(21, 1 + 2 + offset, "%c", c);
+      buffer[offset++] = c;
+    }
   }
+  if( offset >= maxlen )
+    offset = maxlen - 1;
+  buffer[offset] = '\0';
 }
-
-
-
 

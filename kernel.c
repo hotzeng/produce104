@@ -101,6 +101,7 @@ static void initialize_pcb(pcb_t *p, pid_t pid, struct task_info *ti)
     p->total_process_time = 0;
     p->waiting_for_lock = NULL;
     p->barrier = NULL;
+    p->lock_num = 0;
 
     for (int i=0; i<MAX_MBOXEN; i++) {
       p->mboxes[i] = 0;
@@ -449,6 +450,7 @@ static int do_kill(pid_t pid)
 
   queue_remove((node_t *) &pcb[pid]);
 
+  node_t * next;
   // See if any process is waiting for it by looking at its pcb->waiting_queue.
   while (!queue_empty(&pcb[pid].waiting_queue)) {
     next = queue_get(&pcb[pid].waiting_queue);
@@ -458,13 +460,13 @@ static int do_kill(pid_t pid)
   }
 
   // change barrier size if necessary
-  printf(19,1, "checking barrier ");
+  //printf(19,1, "checking barrier ");
 
   if (pcb[pid].barrier != NULL)
     pcb[pid].barrier->size--;
 
   // close the mailbox it uses
-  printf(20,1, "closing mailbox ");
+  //printf(20,1, "closing mailbox ");
 
   for (int mbox=0; mbox<MAX_MBOXEN; mbox++) {
     if (pcb[pid].mboxes[mbox] == 1) {
@@ -472,9 +474,18 @@ static int do_kill(pid_t pid)
       pcb[pid].mboxes[mbox] = 0;
     }
   }
-  printf(18,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
-  printf(19,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
-  printf(20,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  //printf(18,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  //printf(19,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  //printf(20,1, "XXXXXXXXXXXXXXXXXXXXXXXXXXX");
+
+  // release all the locks
+  for(int i = 0; i < pcb[pid].lock_num; i++) {
+    leave_critical();
+    printf(15, 50, "release the %dth lock", i);
+    lock_release(pcb[pid].locks[i]);
+    enter_critical();
+  }
+  pcb[pid].lock_num = 0;
 
   leave_critical();
 

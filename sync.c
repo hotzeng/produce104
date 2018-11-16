@@ -30,6 +30,7 @@ static pcb_t * unblock_one(node_t * wait_queue)
 
     ASSERT(disable_count);
     p = (pcb_t *) queue_get(wait_queue);
+    //printf(24, 50, "%d unblocked", p->pid);
     while (!queue_empty(wait_queue) && p->status == EXITED) {
       p = (pcb_t *) queue_get(wait_queue);
     }
@@ -79,6 +80,8 @@ static int lock_acquire_helper(lock_t * l)
     {
       current_running->waiting_for_lock = NULL;
       l->owner = current_running;
+      // extra credit
+      current_running->locks[current_running->lock_num++] = l;
     }
 
     l->status = LOCKED;
@@ -99,6 +102,14 @@ int lock_acquire(lock_t * l)
 static void lock_release_helper(lock_t * l)
 {
     ASSERT(disable_count);
+    // extra credit
+    pcb_t* owner = l->owner;
+    for(int i = 0; i < owner->lock_num; i++) {
+      if(owner->locks[i] != l)
+        continue;
+      owner->locks[i] = owner->locks[--owner->lock_num];
+    }
+
     pcb_t *p = unblock_one(&l->wait_queue);
     if( p )
     {

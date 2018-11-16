@@ -160,9 +160,7 @@ void do_mbox_send(mbox_t mbox, void *msg, int nbytes)
       semaphore_down(&MessageBoxen[mbox].emptyBuffer);
       semaphore_down(&MessageBoxen[mbox].mutex);
       // debug
-  #ifdef debug      
-      printf(15, 0, "execute mbox_send");
-  #endif
+      //printf(20, 0,"%s sends %d    ", MessageBoxen[mbox].name, *(Message*)msg);
       MessageBoxen[mbox].buffer[MessageBoxen[mbox].buf_tail] = *((Message*)msg + nbytes_sended);
       MessageBoxen[mbox].buf_tail = (MessageBoxen[mbox].buf_tail + 1) % MAX_MBOX_LENGTH;
       nbytes_sended++;
@@ -198,6 +196,7 @@ void do_mbox_recv(mbox_t mbox, void *msg, int nbytes)
   while (nbytes_received < nbytes) {
       semaphore_down(&MessageBoxen[mbox].fullBuffer);
       semaphore_down(&MessageBoxen[mbox].mutex);
+      //printf(20, 0,"%s receives %d    ", MessageBoxen[mbox].name, *(Message*)msg);
       *((Message*)msg + nbytes_received) = MessageBoxen[mbox].buffer[MessageBoxen[mbox].buf_head];
       MessageBoxen[mbox].buf_head = (MessageBoxen[mbox].buf_head + 1) % MAX_MBOX_LENGTH;
       nbytes_received++;

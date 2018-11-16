@@ -156,6 +156,10 @@ void airplane_process(void)
 /* --- stuff used by init --- */
 static void get_line(char *buffer, int maxlen)
 {
+  // debug
+  #ifdef debug
+  printf(10, 0, "begin get_line");
+  #endif
   int offset;
   for(offset=0; offset<maxlen; )
   {

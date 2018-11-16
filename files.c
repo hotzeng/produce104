@@ -10,12 +10,8 @@
 static File files[] =
   {
     {.filename = "init", .process = &init_process },
-    {.filename = "help", .process = &help_process },
-    {.filename = "count", .process = &count_process },
-    {.filename = "producer", .process = &producer_process },
-    {.filename = "consumer", .process = &consumer_process },
-    {.filename = "shutdown", .process = &shutdown_process },
-    {.filename = "plane", .process = &airplane_process }
+    {.filename = "p1", .process = &p1 },
+    {.filename = "p2", .process = &p2 },
   };
 
 #define NUM_FILES     ( sizeof(files) / sizeof(File) )

@@ -2,6 +2,8 @@
 
 #include "common.h"
 #include "queue.h"
+#include "printf.h"
+#include "scheduler.h"
 
 void queue_init(node_t * queue)
 {
@@ -39,7 +41,7 @@ int queue_size(node_t * queue)
 
   int size = 1;
 
-  while (queue->next != queue) {
+  while (item && item->next != queue) {
     size++;
     item = item->next;
   }
@@ -47,6 +49,29 @@ int queue_size(node_t * queue)
   return size;
 
 }
+
+void print_queue(node_t* queue) {
+  node_t* item;
+  item = queue->next;
+  if (item == queue) {
+    printf(2, 60, "empty queue!!!!!");
+    return;
+  }
+  printf(3, 60, "print queue!!!!!");
+  //if(!item) {
+  //  printf(4, 60, "queue is empty!")
+  //} 
+ 
+  int i = 0;
+  pcb_t * pitem;//= (pcb_t *) item;
+  //printf(i, 60, "%d", pitem->pid);
+  while(item != queue) {
+    pitem = (pcb_t *) item; 
+    printf(2+i++, 60, "%d, %d", pitem->pid, item);
+    item = item->next;
+  }
+}
+
 void queue_put(node_t * queue, node_t * item)
 {
     item->prev = queue->prev;

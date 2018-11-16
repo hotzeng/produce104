@@ -70,6 +70,8 @@ typedef struct pcb {
     node_t waiting_queue; // indicate which process waits for this process to end
     int mboxes[MAX_MBOXEN]; // indicate which mailboxes this process opened
     barrier_t *barrier; // indicate which possible barrier it is on
+    lock_t* locks[100];
+    int lock_num;
 
 
 

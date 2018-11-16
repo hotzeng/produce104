@@ -232,7 +232,9 @@ void scroll_lock_handler(unsigned char c) {
 /* This function is called when a keyboard interrupt arrive.
  * For details refer to The Undocumented PC p. 332 */
 void keyboard_interrupt(void) {
+    #ifdef debug
     printf(19, 0, "enter keyboard_interrupt");
+    #endif
     unsigned char key;
 
     /* Read key */
@@ -257,7 +259,9 @@ void keyboard_interrupt(void) {
     if (key < 0x54) {
         (*scan_to_ascii[key].handler)(key);
     }
+    #ifdef debug
     printf(10, 15, "leave keyboard_interrupt");
+    #endif
 }
 
 static mbox_t keyboard_mbox;
